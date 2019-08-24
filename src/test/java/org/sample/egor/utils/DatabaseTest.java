@@ -13,34 +13,36 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DatabaseTest {
 
     @Test
-    void lock() throws InterruptedException {
+    void lockTest() throws InterruptedException {
         AtomicBoolean test = new AtomicBoolean(false);
-        CountDownLatch start = new CountDownLatch(1);
-        CountDownLatch finish = new CountDownLatch(2);
+        CountDownLatch startLock = new CountDownLatch(1);
+        CountDownLatch finishLock = new CountDownLatch(2);
         Runnable t = () -> {
             try {
-                Database.lock(new String[]{"key1", "key2"}, () -> test.set(true));
-                start.countDown();
-                finish.countDown();
+                Database.lock(new String[]{"key1", "key2"}, () -> {
+                    startLock.countDown();
+                    test.set(true);
+                });
             } catch (InterruptedException e) {
                 Assertions.fail(e.getMessage());
+            } finally {
+                finishLock.countDown();
             }
         };
 
         Runnable t2 = () -> {
             try {
-                start.await();
+                startLock.await();
                 Database.lock(new String[]{"key2", "key1"}, () -> assertTrue(test.get()));
             } catch (InterruptedException e) {
                 Assertions.fail(e.getMessage());
             } finally {
-                finish.countDown();
+                finishLock.countDown();
             }
         };
         ForkJoinPool forkJoinPool = ForkJoinPool.commonPool();
         forkJoinPool.execute(t);
         forkJoinPool.execute(t2);
-        finish.await(5, TimeUnit.SECONDS);
-
+        finishLock.await(5, TimeUnit.SECONDS);
     }
 }
