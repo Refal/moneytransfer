@@ -1,4 +1,4 @@
-package org.sample.egor.dao;
+package org.sample.egor.utils;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -19,7 +19,7 @@ class DatabaseTest {
         CountDownLatch finish = new CountDownLatch(2);
         Runnable t = () -> {
             try {
-                Database.lock("key", () -> test.set(true));
+                Database.lock(new String[]{"key1", "key2"}, () -> test.set(true));
                 start.countDown();
                 finish.countDown();
             } catch (InterruptedException e) {
@@ -30,7 +30,7 @@ class DatabaseTest {
         Runnable t2 = () -> {
             try {
                 start.await();
-                Database.lock("key", () -> assertTrue(test.get()));
+                Database.lock(new String[]{"key2", "key1"}, () -> assertTrue(test.get()));
             } catch (InterruptedException e) {
                 Assertions.fail(e.getMessage());
             } finally {

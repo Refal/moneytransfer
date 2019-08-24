@@ -1,4 +1,4 @@
-package org.sample.egor.dao;
+package org.sample.egor.utils;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -9,6 +9,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.sql.DataSource;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -23,7 +25,7 @@ public class Database {
     private final static Logger logger = LoggerFactory.getLogger(Database.class);
     @Singular
     private final static DataSource hikariPool;
-    static Map<String, ReentrantLock> accountLocks = new ConcurrentHashMap<>();
+    private static Map<String, ReentrantLock> accountLocks = new ConcurrentHashMap<>();
 
     static {
         String url = "jdbc:hsqldb:mem:mymemdb";
@@ -42,8 +44,8 @@ public class Database {
         hikariConfig.setValidationTimeout(TimeUnit.MINUTES.toMillis(1));
         hikariConfig.setMaximumPoolSize(10);
         hikariConfig.setMinimumIdle(0);
-        hikariConfig.setMaxLifetime(TimeUnit.MINUTES.toMillis(2)); // 120 seconds
-        hikariConfig.setIdleTimeout(TimeUnit.MINUTES.toMillis(1)); // minutes
+        hikariConfig.setMaxLifetime(TimeUnit.MINUTES.toMillis(2));
+        hikariConfig.setIdleTimeout(TimeUnit.MINUTES.toMillis(1));
         hikariConfig.setConnectionTimeout(TimeUnit.MINUTES.toMillis(5));
 //        hikariConfig.setConnectionTestQuery("select 1");
         hikariPool = new HikariDataSource(hikariConfig);
@@ -52,18 +54,27 @@ public class Database {
 
     ExecutorService pool = new ForkJoinPool();
 
-    public static void lock(String key, Runnable run) throws InterruptedException {
-        accountLocks.putIfAbsent(key, new ReentrantLock());
-        Lock lock = accountLocks.get(key);
-        logger.debug("will lock {}, ", key);
-        lock.lockInterruptibly();
-        logger.debug("key {} locked, ", key);
+    public static void lock(String[] keys, Runnable run) throws InterruptedException {
+        //will lock accounts in a sorted order to prevent deadlock
+        Arrays.sort(keys);
+        for (String key : keys) {
+            accountLocks.putIfAbsent(key, new ReentrantLock());
+            Lock lock = accountLocks.get(key);
+            lock.lockInterruptibly();
+            logger.debug("key {} locked, ", key);
+        }
         try {
             run.run();
         } finally {
-            logger.debug("will release {}", key);
-            lock.unlock();
+            //unlock will be made in reverse order
+            Arrays.sort(keys, Collections.reverseOrder());
+            for (String key : keys) {
+                Lock lock = accountLocks.get(key);
+                lock.unlock();
+                logger.debug("key {} unlocked, ", key);
+            }
         }
+
     }
 
     public static DataSource getDataSource() {
