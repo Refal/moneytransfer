@@ -36,7 +36,8 @@ class AccountActionImplTest {
         Account target = new Account("b", BigDecimal.valueOf(0.0));
         BigDecimal transferAmount = BigDecimal.valueOf(1.0);
 
-        when(persistence.getAccount(anyString())).thenReturn(source).thenReturn(target);
+        when(persistence.getAccount(eq("a"))).thenReturn(source);
+        when(persistence.getAccount(eq("b"))).thenReturn(target);
 
         action.transferAmount(source.getAccountNumber(), target.getAccountNumber(), transferAmount);
         verify(persistence).changeAmount(eq(source.getAccountNumber()), eq(transferAmount.negate()));

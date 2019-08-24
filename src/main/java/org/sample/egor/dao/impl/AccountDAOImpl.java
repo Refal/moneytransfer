@@ -3,8 +3,8 @@ package org.sample.egor.dao.impl;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.sample.egor.dao.AccountDAO;
-import org.sample.egor.dao.Database;
 import org.sample.egor.dto.Account;
+import org.sample.egor.utils.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -63,6 +63,7 @@ public class AccountDAOImpl implements AccountDAO {
             stmt.setBigDecimal(1, amount);
             stmt.setString(2, accountNumber);
             stmt.executeUpdate();
+            logger.info("changed account: {}, for a value: {}", accountNumber, amount);
         }
     }
 }

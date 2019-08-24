@@ -1,17 +1,15 @@
 package org.sample.egor.service.impl;
 
 import org.sample.egor.dao.AccountDAO;
-import org.sample.egor.dao.Database;
 import org.sample.egor.dto.Account;
 import org.sample.egor.exception.*;
 import org.sample.egor.service.AccountService;
+import org.sample.egor.utils.Database;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class AccountServiceImpl implements AccountService {
     private final static Logger logger = LoggerFactory.getLogger(AccountServiceImpl.class);
@@ -27,11 +25,8 @@ public class AccountServiceImpl implements AccountService {
             if (amount.compareTo(BigDecimal.ZERO) < 0) {
                 throw new NegativeAmountException(amount);
             }
-            //will lock accounts in a sorted order to prevent deadlock
-            String key = Stream.of(sourceAccountNumber, targetAccountNumber).sorted().collect(Collectors.joining(","));
-            logger.debug("will lock by key: {}", key);
-            Database.lock(key, () -> {
-                logger.debug("accounts: {} locked", key);
+            Database.lock(new String[]{sourceAccountNumber, targetAccountNumber}, () -> {
+                logger.debug("accounts: {}, {} locked", sourceAccountNumber, targetAccountNumber);
                 try {
                     Account sourceAccount = getAccount(sourceAccountNumber);
                     Account targetAccount = getAccount(targetAccountNumber);
