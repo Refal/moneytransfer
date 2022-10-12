@@ -24,7 +24,7 @@
         <swagger-core-version>3.0.10</swagger-core-version>
         <logback-version>1.2.3</logback-version>
         <slf4j-api.version>1.7.28</slf4j-api.version>
-        <hsqldb.version>2.4.0</hsqldb.version>
+        <hsqldb.version>2.7.1</hsqldb.version>
         <HikariCP.version>3.3.1</HikariCP.version>
         <flyway-core.version>6.0.0</flyway-core.version>
         <lombok.version>1.18.8</lombok.version>
